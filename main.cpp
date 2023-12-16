@@ -12,6 +12,7 @@
 #include <exception>
 #include <iostream>
 #include <string>
+#include <string_view>
 #include <stack>
 
 class Token {
@@ -79,16 +80,14 @@ int unaryCompute(int rhs, char token) {
 using IntStack = std::stack<int>;
 
 // extremely simple parser. We don't handle "negative signed vals. Or error inputs."
-Token getNextToken(std::string::const_iterator inputIter, std::string::const_iterator endIter)
+Token getNextToken(std::string_view inputStr)
 {
     using std::isdigit;
     using std::stoi;
     Token result;
     std::string numberStr;
     
-    while (inputIter != endIter) {
-        char c = *inputIter;
-        ++inputIter;
+    for ( auto c : inputStr) {
         if (isdigit(c)) {
             numberStr += c;
             result.incrementNumberOfCharsToAdvance();
@@ -124,7 +123,7 @@ int calculate(std::string input)
     auto iterInput(input.begin());
     
     // the first token must be a number;
-    auto token = getNextToken(input.begin(), input.end());
+    auto token = getNextToken(std::string_view{input.begin(), input.end()});
     if (token.isNumber() ) {
         result = token.getNumber();
         advance(iterInput, token.getNumberOfCharsToAdvance());
@@ -133,7 +132,7 @@ int calculate(std::string input)
     }
     
     while(iterInput != input.end()) {
-        token = getNextToken(iterInput, input.end());
+        token = getNextToken(std::string_view{iterInput, input.end()});
         if (token.isNumber()) {
             inputStack.push(token.getNumber());
         }
@@ -178,7 +177,5 @@ int main(int argc, const char * argv[]) {
         }
     }
     
-    // insert code here...
-    std::cout << "Hello, World!\n";
     return 0;
 }
