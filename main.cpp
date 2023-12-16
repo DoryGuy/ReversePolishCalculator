@@ -9,6 +9,7 @@
 #include <algorithm> // advance
 #include <cassert>
 #include <cctype> // isdigit
+#include <cmath>
 #include <exception>
 #include <iostream>
 #include <string>
@@ -18,7 +19,7 @@
 class Token {
     bool is_number {false};
     union {
-        int  number {0};
+        long double  number {0};
         char token;
     } parsed;
     size_t numberOfCharsToAdvance {0};
@@ -36,15 +37,15 @@ public:
         return is_number;
     }
     
-    constexpr int getNumber() const {
+    constexpr long double getNumber() const {
         return parsed.number;
     }
     
-    void setNumber(int val) noexcept {
+    void setNumber(long double val) noexcept {
         is_number = true;
         parsed.number = val;
     }
-    
+
     constexpr char getToken() const noexcept {
         return parsed.token;
     }
@@ -55,7 +56,7 @@ public:
     }
 };
 
-int binaryCompute(int lhs, int rhs, char token) {
+long double binaryCompute(long double lhs, long double rhs, char token) {
     switch (token) {
     case '+':
         return lhs + rhs;
@@ -65,11 +66,13 @@ int binaryCompute(int lhs, int rhs, char token) {
         return lhs * rhs;
     case '/':
         return lhs / rhs;
+    case '^':
+        return std::pow(lhs, rhs);
     }
     return 0;
 }
 
-int unaryCompute(int rhs, char token) {
+long double unaryCompute(long double rhs, char token) {
     switch (token) {
     case '-':
         return -rhs;
@@ -77,7 +80,7 @@ int unaryCompute(int rhs, char token) {
     return rhs;
 }
 
-using IntStack = std::stack<int>;
+using NumberStack = std::stack<long double>;
 
 // extremely simple parser. We don't handle "negative signed vals. Or error inputs."
 Token getNextToken(std::string_view inputStr)
@@ -86,14 +89,22 @@ Token getNextToken(std::string_view inputStr)
     using std::stoi;
     Token result;
     std::string numberStr;
+    bool decimalPoint{false};
     
     for ( auto c : inputStr) {
         if (isdigit(c)) {
             numberStr += c;
             result.incrementNumberOfCharsToAdvance();
+        } else if ( c == '.' ) {
+            if (decimalPoint) {
+               throw std::runtime_error("Already have a decimal point in this number.");
+            }
+            decimalPoint = true;
+            numberStr += c;
+            result.incrementNumberOfCharsToAdvance();
         } else {
             switch (c) {
-                case '+': case '-': case '*': case '/':
+                case '+': case '-': case '*': case '/': case'^':
                     if (numberStr.empty()) {
                         result.setToken(c);
                         result.incrementNumberOfCharsToAdvance();
@@ -109,17 +120,17 @@ done:
     
     if (!numberStr.empty())
     {
-        result.setNumber(stoi(numberStr));
+        result.setNumber(stold(numberStr));
     }
     
     return result;
 }
 
-int calculate(std::string input)
+long double calculate(std::string input)
 {
     using std::advance;
-    int result (0);
-    IntStack inputStack;
+    long double result (0);
+    NumberStack inputStack;
     auto iterInput(input.begin());
     
     // the first token must be a number;
@@ -151,20 +162,24 @@ int calculate(std::string input)
     return result;
 }
 
-int main(int argc, const char * argv[]) {
+int main() {
     
     using std::string;
     using std::cout;
     using std::endl;
     using std::pair;
-    pair<string,int> inputs[] {{("2,3+"),5},
-                               {("1-"), -1},
+    pair<string,long double> inputs[] {
+        {("2,3+"),5},
+        {("1-"), -1},
         {("1"),1},
         {("10,20*"),200},
         {("10,5/"),2},
         {("10,4-"),6},
         {("2,3+5+"),10},
-        {("7,14,7-+"),14}};
+        {("7,14,7-+"),14},
+        {("2,2,^"),4},
+        {("2.0,2,^"),4},
+        {("5,2/"),2.5}};
     
     for (auto input: inputs) {
         try {
