@@ -31,4 +31,7 @@
 *.out
 *.app
 
+# Editor swap files
+*.swp
+
 tags
